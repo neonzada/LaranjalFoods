@@ -7,31 +7,38 @@
 
 #define MUT_INIT(x) assert(pthread_mutex_init(x, NULL) == 0)
 
-#define N 1
+#define N 10
 #define SECONDS 2
 
 pthread_mutex_t orders[N];
 pthread_mutex_t bikes[N];
 
+typedef struct ThreadArgs{
+	int id;
+	int restaurant;
+} ThreadArgs;
+
 void*
 veteran(void* ptr)
 {
-  int r = *(int*)ptr;
+	ThreadArgs* args = (ThreadArgs*)ptr;
+  int id = args->id;
+	int r  = args->restaurant;
 
-  printf("[Veteran] Trying bike %d...\n", r);
+  printf("[Veteran %d] Trying bike %d...\n", id, r);
   pthread_mutex_lock(&bikes[r]);
   
   sleep(SECONDS);
 
-  printf("[Veteran] Trying order %d...\n", r);
+  printf("[Veteran %d] Trying order %d...\n", id, r);
   if(pthread_mutex_trylock(&orders[r]) != 0){
-    printf("[Veteran] Both resources are locked, releasing bike %d\n", r);
+    printf("[Veteran %d] Both resources are locked, releasing bike %d\n", id, r);
     pthread_mutex_unlock(&bikes[r]);
     return NULL;
   };
 
 
-  printf("[Veteran] Successfully delivered order %d.\nFreeing resources...\n", r);
+  printf("[Veteran %d] Successfully delivered order %d. Freeing resources...\n", id, r);
   pthread_mutex_unlock(&bikes[r]);
   pthread_mutex_unlock(&orders[r]);
   pthread_exit(NULL);
@@ -40,21 +47,23 @@ veteran(void* ptr)
 void*
 novice(void* ptr)
 {
-  int r = *(int*)ptr;
+  ThreadArgs* args = (ThreadArgs*)ptr;
+	int id = args->id;
+	int r  = args->restaurant;
 
-  printf("[Novice] Trying order %d...\n", r);
+  printf("[Novice %d] Trying order %d...\n", id, r);
   pthread_mutex_lock(&orders[r]);
   
   sleep(SECONDS);
 
-  printf("[Novice] Trying bike %d...\n", r);
+  printf("[Novice %d] Trying bike %d...\n", id, r);
   if(pthread_mutex_trylock(&bikes[r]) != 0){
-    printf("[Novice] Trying order %d...\n", r);
+    printf("[Novice %d] Both resources are locked, releasing order %d...\n", id, r);
     pthread_mutex_unlock(&orders[r]);
     return NULL;
   };
 
-  printf("[Novice] Successfully delivered order %d.\nFreeing resources...\n", r);
+  printf("[Novice %d] Successfully delivered order %d. Freeing resources...\n", id, r);
   pthread_mutex_unlock(&orders[r]);
   pthread_mutex_unlock(&bikes[r]);
   pthread_exit(NULL);
@@ -73,17 +82,29 @@ main(int argc, char* argv[]){
 
   pthread_t veterans[N];
   pthread_t novices[N];
-  int id_vet[N];
-  int id_nov[N];
-  int rc = 0;
+  
+	//int id_vet[N];
+  //int id_nov[N];
+  
+	ThreadArgs vet_args[N];
+	ThreadArgs nov_args[N];
+
+	int rc = 0;
   
   puts("Creating threads...");
   for(int i = 0; i < N; i++){
-    id_vet[i] = rand() % N;
-    id_nov[i] = rand() % N;
+    //id_vet[i] = rand() % N;
+    //id_nov[i] = rand() % N;
+		
+		vet_args[i].id = i;
+		vet_args[i].restaurant = rand() % N;
+
+		nov_args[i].id = i;
+		nov_args[i].restaurant = rand() % N;
+
     
-    pthread_create(&veterans[i], NULL, veteran, &id_vet[i]);
-    pthread_create(&novices[i], NULL, novice, &id_nov[i]);
+    pthread_create(&veterans[i], NULL, veteran, &vet_args[i]);
+    pthread_create(&novices[i], NULL, novice, &nov_args[i]);
   }
 
 
