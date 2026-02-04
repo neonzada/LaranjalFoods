@@ -7,6 +7,24 @@
 
 #define MUT_INIT(x) assert(pthread_mutex_init(x, NULL) == 0)
 
+// Color support toggle: colors may not work on Windows Powershell or cmd
+// Comment the line below to toggle colors off
+#define COLOR
+#ifdef COLOR
+	#define C(x) x
+#else
+	#define C(x) ""
+#endif
+
+#define CLR_RESET   "\033[0m"
+#define CLR_RED     "\033[31m"
+#define CLR_GREEN   "\033[32m"
+#define CLR_ORANGE  "\033[33m"
+#define CLR_BLUE    "\033[34m"
+#define CLR_MAGENTA "\033[35m"
+#define CLR_CYAN    "\033[36m"
+#define CLR_GRAY    "\033[90m"
+
 #define N 10
 #define SECONDS 2
 
@@ -27,18 +45,20 @@ veteran(void* ptr)
 
   printf("[Veteran %d] Trying bike %d...\n", id, r);
   pthread_mutex_lock(&bikes[r]);
-  
-  sleep(SECONDS);
+  printf(C(CLR_CYAN) "[Veteran %d] Locked bike %d\n" C(CLR_RESET), id, r);
+
+  sleep((rand() % SECONDS) + 2);
 
   printf("[Veteran %d] Trying order %d...\n", id, r);
   if(pthread_mutex_trylock(&orders[r]) != 0){
-    printf("[Veteran %d] Both resources are locked, releasing bike %d\n", id, r);
+    printf(C(CLR_ORANGE) "[Veteran %d] Both resources are locked, releasing bike %d...\n" C(CLR_RESET), id, r);
     pthread_mutex_unlock(&bikes[r]);
     return NULL;
   };
 
-
-  printf("[Veteran %d] Successfully delivered order %d. Freeing resources...\n", id, r);
+	printf(C(CLR_CYAN) "[Veteran %d] Locked order %d. Delivering...\n" C(CLR_RESET), id, r);
+	sleep((rand() % SECONDS) + 2);
+  printf(C(CLR_GREEN) "[Veteran %d] Successfully delivered order %d. Freeing resources...\n" C(CLR_RESET), id, r);
   pthread_mutex_unlock(&bikes[r]);
   pthread_mutex_unlock(&orders[r]);
   pthread_exit(NULL);
@@ -53,17 +73,20 @@ novice(void* ptr)
 
   printf("[Novice %d] Trying order %d...\n", id, r);
   pthread_mutex_lock(&orders[r]);
+  printf(C(CLR_CYAN) "[Novice %d] Locked order %d\n" C(CLR_RESET), id, r);
   
-  sleep(SECONDS);
+  sleep((rand() % SECONDS) + 2);
 
   printf("[Novice %d] Trying bike %d...\n", id, r);
   if(pthread_mutex_trylock(&bikes[r]) != 0){
-    printf("[Novice %d] Both resources are locked, releasing order %d...\n", id, r);
+    printf(C(CLR_ORANGE) "[Novice %d] Both resources are locked, releasing order %d...\n" C(CLR_RESET), id, r);
     pthread_mutex_unlock(&orders[r]);
     return NULL;
   };
-
-  printf("[Novice %d] Successfully delivered order %d. Freeing resources...\n", id, r);
+	
+	printf(C(CLR_CYAN) "[Novice %d] Locked bike %d. Delivering...\n" C(CLR_RESET), id, r);
+	sleep((rand() % SECONDS) + 2);
+  printf(C(CLR_GREEN) "[Novice %d] Successfully delivered order %d. Freeing resources...\n" C(CLR_RESET), id, r);
   pthread_mutex_unlock(&orders[r]);
   pthread_mutex_unlock(&bikes[r]);
   pthread_exit(NULL);
@@ -82,10 +105,7 @@ main(int argc, char* argv[]){
 
   pthread_t veterans[N];
   pthread_t novices[N];
-  
-	//int id_vet[N];
-  //int id_nov[N];
-  
+ 
 	ThreadArgs vet_args[N];
 	ThreadArgs nov_args[N];
 
@@ -93,16 +113,11 @@ main(int argc, char* argv[]){
   
   puts("Creating threads...");
   for(int i = 0; i < N; i++){
-    //id_vet[i] = rand() % N;
-    //id_nov[i] = rand() % N;
-		
 		vet_args[i].id = i;
 		vet_args[i].restaurant = rand() % N;
-
 		nov_args[i].id = i;
 		nov_args[i].restaurant = rand() % N;
 
-    
     pthread_create(&veterans[i], NULL, veteran, &vet_args[i]);
     pthread_create(&novices[i], NULL, novice, &nov_args[i]);
   }
