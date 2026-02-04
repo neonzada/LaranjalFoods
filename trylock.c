@@ -1,9 +1,21 @@
+/*
+ * trylock.c
+ *
+ * Deadlock prevention by using pthread_mutex_trylock() and 
+ * relinquishing ownership if acquisition of the second resource
+ * fails, basically employing a non-blocking resource acquisition
+ * strategy that prevents circular wait.
+ */
+
+#include <stdlib.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <pthread.h>
 #include <unistd.h>
 #include <time.h>
 #include <assert.h>
+#include <errno.h>
+#include <string.h>
 
 #define MUT_INIT(x) assert(pthread_mutex_init(x, NULL) == 0)
 
@@ -48,20 +60,24 @@ veteran(void* ptr)
   printf(C(CLR_CYAN) "[Veteran %d] Locked bike %d\n" C(CLR_RESET), id, r);
 
   sleep((rand() % SECONDS) + 2);
-
-  printf("[Veteran %d] Trying order %d...\n", id, r);
-  if(pthread_mutex_trylock(&orders[r]) != 0){
+  
+	printf("[Veteran %d] Trying order %d...\n", id, r);
+	int s = pthread_mutex_trylock(&orders[r]);
+  if(s == EBUSY){
     printf(C(CLR_ORANGE) "[Veteran %d] Both resources are locked, releasing bike %d...\n" C(CLR_RESET), id, r);
     pthread_mutex_unlock(&bikes[r]);
-    return NULL;
-  };
+  }else if(s == 0){
+		printf(C(CLR_CYAN) "[Veteran %d] Locked order %d. Delivering...\n" C(CLR_RESET), id, r);
+		sleep((rand() % SECONDS) + 2);
+  	printf(C(CLR_GREEN) "[Veteran %d] Successfully delivered order %d. Freeing resources...\n" C(CLR_RESET), id, r);
+  	
+		pthread_mutex_unlock(&bikes[r]);
+  	pthread_mutex_unlock(&orders[r]);
+	}else{
+		fprintf(stderr, "Error trying to lock mutex: %s\n", strerror(s));
+	}
 
-	printf(C(CLR_CYAN) "[Veteran %d] Locked order %d. Delivering...\n" C(CLR_RESET), id, r);
-	sleep((rand() % SECONDS) + 2);
-  printf(C(CLR_GREEN) "[Veteran %d] Successfully delivered order %d. Freeing resources...\n" C(CLR_RESET), id, r);
-  pthread_mutex_unlock(&bikes[r]);
-  pthread_mutex_unlock(&orders[r]);
-  pthread_exit(NULL);
+	return NULL;
 }
 
 void*
@@ -78,18 +94,22 @@ novice(void* ptr)
   sleep((rand() % SECONDS) + 2);
 
   printf("[Novice %d] Trying bike %d...\n", id, r);
-  if(pthread_mutex_trylock(&bikes[r]) != 0){
+	int s = pthread_mutex_trylock(&bikes[r]);
+  if(s == EBUSY){
     printf(C(CLR_ORANGE) "[Novice %d] Both resources are locked, releasing order %d...\n" C(CLR_RESET), id, r);
     pthread_mutex_unlock(&orders[r]);
-    return NULL;
-  };
-	
-	printf(C(CLR_CYAN) "[Novice %d] Locked bike %d. Delivering...\n" C(CLR_RESET), id, r);
-	sleep((rand() % SECONDS) + 2);
-  printf(C(CLR_GREEN) "[Novice %d] Successfully delivered order %d. Freeing resources...\n" C(CLR_RESET), id, r);
-  pthread_mutex_unlock(&orders[r]);
-  pthread_mutex_unlock(&bikes[r]);
-  pthread_exit(NULL);
+  }else if(s == 0){
+		printf(C(CLR_CYAN) "[Novice %d] Locked bike %d. Delivering...\n" C(CLR_RESET), id, r);
+		sleep((rand() % SECONDS) + 2);
+  	printf(C(CLR_GREEN) "[Novice %d] Successfully delivered order %d. Freeing resources...\n" C(CLR_RESET), id, r);
+  
+		pthread_mutex_unlock(&orders[r]);
+  	pthread_mutex_unlock(&bikes[r]);
+	}else{
+		fprintf(stderr, "Error trying to lock mutex: %s\n", strerror(s));
+	}
+
+	return NULL;
 }
 
 int
@@ -102,15 +122,11 @@ main(int argc, char* argv[]){
     MUT_INIT(&bikes[i]);
   }
 
-
   pthread_t veterans[N];
   pthread_t novices[N];
- 
 	ThreadArgs vet_args[N];
 	ThreadArgs nov_args[N];
 
-	int rc = 0;
-  
   puts("Creating threads...");
   for(int i = 0; i < N; i++){
 		vet_args[i].id = i;
@@ -122,10 +138,10 @@ main(int argc, char* argv[]){
     pthread_create(&novices[i], NULL, novice, &nov_args[i]);
   }
 
-
   for(int i = 0; i < N; i++){
     pthread_join(veterans[i], NULL);
     pthread_join(novices[i], NULL);
   }
-  return EXIT_SUCCESS;
+  
+	return EXIT_SUCCESS;
 }
