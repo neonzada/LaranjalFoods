@@ -59,6 +59,7 @@ veteran(void* ptr)
 void*
 novice(void* ptr)
 {
+
 }
 
 int
@@ -75,15 +76,15 @@ main(int argc, char* argv[]){
 	}
 
 	MUT_INIT(&state_lock);
-  
-  pthread_t veterans[N];
-  pthread_t novices[N];
- 
+
+	pthread_t veterans[N];
+	pthread_t novices[N];
+
 	ThreadArgs vet_args[N];
 	ThreadArgs nov_args[N];
 
-  puts("Creating threads...");
-  for(int i = 0; i < N; i++){
+	puts("Creating threads...");
+	for(int i = 0; i < N; i++){
 		vet_args[i].id = i;
 		vet_args[i].restaurant = rand() % N;
 		vet_args[i].type = 0;
@@ -92,14 +93,14 @@ main(int argc, char* argv[]){
 		nov_args[i].restaurant = rand() % N;
 		nov_args[i].type = 1;
 
-    pthread_create(&veterans[i], NULL, veteran, &vet_args[i]);
-    pthread_create(&novices[i], NULL, novice, &nov_args[i]);
-  }
+		pthread_create(&veterans[i], NULL, veteran, &vet_args[i]);
+		pthread_create(&novices[i], NULL, novice, &nov_args[i]);
+	}
 
 
-  for(int i = 0; i < N; i++){
-    pthread_join(veterans[i], NULL);
-    pthread_join(novices[i], NULL);
-  }
-  return EXIT_SUCCESS;
+	for(int i = 0; i < N; i++){
+		pthread_join(veterans[i], NULL);
+		pthread_join(novices[i], NULL);
+	}
+	return EXIT_SUCCESS;
 }

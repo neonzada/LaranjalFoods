@@ -17,7 +17,25 @@
 #include <errno.h>
 #include <string.h>
 
-#define MUT_INIT(x) assert(pthread_mutex_init(x, NULL) == 0)
+#define MUT_INIT(x) 												\
+	do{																				\
+		int rc = pthread_mutex_init(x, NULL);		\
+		if(rc){																	\
+			perror("pthread_mutex_init failed");	\
+			exit(EXIT_FAILURE);										\
+		}																				\
+	}while(0)
+
+
+#define THREAD_CREATE(thr, fn, arg)								\
+	do{																							\
+		int rc = pthread_create(thr, NULL, fn, arg);	\
+		if(rc){																				\
+			perror("pthread_create failed");						\
+			exit(EXIT_FAILURE);													\
+		}																							\
+	}while(0)																				\
+
 
 // Color support toggle: colors may not work on Windows Powershell or cmd
 // Comment the line below to toggle colors off
@@ -28,6 +46,7 @@
 	#define C(x) ""
 #endif
 
+
 #define CLR_RESET   "\033[0m"
 #define CLR_RED     "\033[31m"
 #define CLR_GREEN   "\033[32m"
@@ -37,11 +56,14 @@
 #define CLR_CYAN    "\033[36m"
 #define CLR_GRAY    "\033[90m"
 
+
 #define N 5
 #define MILLIS 500
 
+
 pthread_mutex_t orders[N];
 pthread_mutex_t bikes[N];
+
 
 typedef struct ThreadArgs{
 	int id;
@@ -132,6 +154,7 @@ main(int argc, char* argv[]){
 	ThreadArgs vet_args[N];
 	ThreadArgs nov_args[N];
 
+	int rc;
 	for(;;){
 		system("clear");
 		printf("================\n");
@@ -145,8 +168,8 @@ main(int argc, char* argv[]){
 			nov_args[i].id = i;
 			nov_args[i].restaurant = rand() % N;
 
-			pthread_create(&veterans[i], NULL, veteran, &vet_args[i]);
-			pthread_create(&novices[i], NULL, novice, &nov_args[i]);
+			THREAD_CREATE(&veterans[i], veteran, &vet_args[i]);
+			THREAD_CREATE(&novices[i], novice, &nov_args[i]);
 		}
 
 		for(int i = 0; i < N; i++){
