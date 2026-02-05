@@ -17,24 +17,24 @@
 #include <errno.h>
 #include <string.h>
 
-#define MUT_INIT(x) 												\
-	do{																				\
-		int rc = pthread_mutex_init(x, NULL);		\
-		if(rc){																	\
-			perror("pthread_mutex_init failed");	\
-			exit(EXIT_FAILURE);										\
-		}																				\
+#define MUT_INIT(x)\
+	do{\
+		int rc = pthread_mutex_init(x, NULL);\
+		if(rc){\
+			perror("pthread_mutex_init failed");\
+			exit(EXIT_FAILURE);\
+		}\
 	}while(0)
 
 
-#define THREAD_CREATE(thr, fn, arg)								\
-	do{																							\
-		int rc = pthread_create(thr, NULL, fn, arg);	\
-		if(rc){																				\
-			perror("pthread_create failed");						\
-			exit(EXIT_FAILURE);													\
-		}																							\
-	}while(0)																				\
+#define THREAD_CREATE(thr, fn, arg)\
+	do{\
+		int rc = pthread_create(thr, NULL, fn, arg);\
+		if(rc){\
+			perror("pthread_create failed");\
+			exit(EXIT_FAILURE);\
+		}\
+	}while(0)\
 
 
 // Color support toggle: colors may not work on Windows Powershell or cmd
