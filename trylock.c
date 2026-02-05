@@ -34,7 +34,7 @@
 			perror("pthread_create failed");\
 			exit(EXIT_FAILURE);\
 		}\
-	}while(0)\
+	}while(0)
 
 
 // Color support toggle: colors may not work on Windows Powershell or cmd
