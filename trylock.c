@@ -121,7 +121,7 @@ int
 main(int argc, char* argv[]){
 	srand(time(NULL));
 
-	printf("Initializing mutexes...");
+	printf("Initializing mutexes...\n");
 	for(int i = 0; i < N; i++){
 		MUT_INIT(&orders[i]);
 		MUT_INIT(&bikes[i]);
@@ -134,11 +134,11 @@ main(int argc, char* argv[]){
 
 	for(;;){
 		system("clear");
-		printf("================");
-		printf("SIMULATION START");
-		printf("================");
+		printf("================\n");
+		printf("SIMULATION START\n");
+		printf("================\n");
 		
-		printf("Creating threads...");
+		printf("Creating threads...\n");
 		for(int i = 0; i < N; i++){
 			vet_args[i].id = i;
 			vet_args[i].restaurant = rand() % N;
